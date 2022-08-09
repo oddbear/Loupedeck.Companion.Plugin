@@ -20,9 +20,6 @@ namespace Loupedeck.CompanionPlugin
 
         public CompanionPlugin()
         {
-            //var source = new CancellationTokenSource();
-            //var cancellationToken = source.Token;
-
             var uri = new Uri("ws://127.0.0.1:28492");
             Client = new WatsonWsClient(uri);
             Client.MessageReceived += HandleResponse;

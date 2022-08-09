@@ -47,6 +47,9 @@ namespace Loupedeck.CompanionPlugin.Folders
         {
             try
             {
+                if (fillImage.Page != null || fillImage.Bank != null)
+                    return;
+
                 var bitmap = _buttons[fillImage.KeyIndex];
                 bitmap.DrawBuffer(fillImage.Data.Data);
 

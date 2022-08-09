@@ -32,7 +32,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <OutputPath>..\..\bin\Companion\</OutputPath>
+    <OutputPath>..\..\bin\Companion\bin\win\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
@@ -60,6 +60,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Commands\CompanionButton.cs" />
     <Compile Include="Extensions\WebsocketClientExtensions.cs" />
     <Compile Include="Folders\DynamicFolder.cs" />
     <Compile Include="Extensions\BitmapExtensions.cs" />
@@ -83,5 +84,6 @@
     <EmbeddedResource Include="Resources\Icons\Icon-32.png" />
     <EmbeddedResource Include="Resources\Icons\Icon-48.png" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

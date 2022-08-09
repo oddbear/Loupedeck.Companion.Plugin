@@ -7,7 +7,11 @@ namespace Loupedeck.CompanionPlugin.Responses
         [JsonProperty("keyIndex")]
         public int KeyIndex { get; set; }
 
-        //Nullable page property (static button)
+        [JsonProperty("page")]
+        public int? Page { get; set; }
+
+        [JsonProperty("bank")]
+        public int? Bank { get; set; }
 
         [JsonProperty("data")]
         public BufferData Data { get; set; }

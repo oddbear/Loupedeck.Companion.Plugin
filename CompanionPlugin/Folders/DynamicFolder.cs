@@ -1,0 +1,108 @@
+﻿using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using Loupedeck.CompanionPlugin.Extensions;
+using Loupedeck.CompanionPlugin.Responses;
+using WatsonWebsocket;
+
+namespace Loupedeck.CompanionPlugin.Folders
+{
+    class DynamicFolder : PluginDynamicFolder
+    {
+        private Bitmap[] _buttons;
+
+        private CompanionPlugin _plugin;
+        private WatsonWsClient _client;
+
+        public DynamicFolder()
+        {
+            _buttons = new Bitmap[34];
+            for (var i = 0; i < 34; i++)
+                _buttons[i] = new Bitmap(72, 72);
+
+            this.DisplayName = "Companion";
+            this.GroupName = "Dynamic Folder";
+            this.Navigation = PluginDynamicFolderNavigation.EncoderArea;
+        }
+
+        public override bool Load()
+        {
+            _plugin = (CompanionPlugin) base.Plugin;
+            _plugin.FillImageResponse += PluginOnFillImageResponse;
+
+            _client = _plugin.Client;
+
+            return true;
+        }
+
+        public override bool Unload()
+        {
+            _plugin.FillImageResponse -= PluginOnFillImageResponse;
+
+            return true;
+        }
+
+        private void PluginOnFillImageResponse(object sender, ResponseFillImage fillImage)
+        {
+            try
+            {
+                var bitmap = _buttons[fillImage.KeyIndex];
+                bitmap.DrawBuffer(fillImage.Data.Data);
+
+                var actionParameter = fillImage.KeyIndex.ToString();
+                base.CommandImageChanged(actionParameter);
+            }
+            catch
+            {
+                //
+            }
+        }
+
+        public override void RunCommand(string actionParameter)
+        {
+            if (!int.TryParse(actionParameter, out var index))
+                return;
+
+            _client.SendCommand("keydown", new { keyIndex = index });
+        }
+
+        public override BitmapImage GetCommandImage(string actionParameter, PluginImageSize imageSize)
+        {
+            if (!int.TryParse(actionParameter, out var index))
+                return base.GetCommandImage(actionParameter, imageSize);
+
+            var image = _buttons[index];
+
+            using (var memoryStream = new MemoryStream())
+            {
+                image.Save(memoryStream, ImageFormat.Bmp);
+
+                var data = memoryStream.ToArray();
+                
+                return BitmapImage.FromArray(data);
+            }
+        }
+        
+        public override IEnumerable<string> GetButtonPressActionNames()
+        {
+            return new[]
+            {
+                this.CreateCommandName("0"),
+                this.CreateCommandName("1"),
+                this.CreateCommandName("2"),
+                this.CreateCommandName("3"),
+
+                this.CreateCommandName("8"),
+                this.CreateCommandName("9"),
+                this.CreateCommandName("10"),
+                this.CreateCommandName("11"),
+
+                this.CreateCommandName("16"),
+                this.CreateCommandName("17"),
+                this.CreateCommandName("18"),
+                this.CreateCommandName("19")
+            };
+        }
+    }
+}

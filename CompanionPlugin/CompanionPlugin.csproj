@@ -62,6 +62,7 @@
   <ItemGroup>
     <Compile Include="Commands\CompanionButton.cs" />
     <Compile Include="Extensions\WebsocketClientExtensions.cs" />
+    <Compile Include="Folders\DynamicShiftedFolder.cs" />
     <Compile Include="Folders\DynamicFolder.cs" />
     <Compile Include="Extensions\BitmapExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

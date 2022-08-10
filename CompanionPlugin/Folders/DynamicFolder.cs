@@ -62,12 +62,24 @@ namespace Loupedeck.CompanionPlugin.Folders
             }
         }
 
-        public override void RunCommand(string actionParameter)
+        public override bool ProcessTouchEvent(string actionParameter, DeviceTouchEvent touchEvent)
         {
             if (!int.TryParse(actionParameter, out var index))
-                return;
+                return false;
 
-            _client.SendCommand("keydown", new { keyIndex = index });
+            //TODO: How to get haptic feedback?
+            switch (touchEvent.EventType)
+            {
+                case DeviceTouchEventType.TouchDown:
+                    _client.SendCommand("keydown", new { keyIndex = index });
+                    break;
+                case DeviceTouchEventType.TouchUp:
+                    _client.SendCommand("keyup", new { keyIndex = index });
+                    break;
+            }
+
+            //It is supposed to be true... but then I will loose haptic feedback...
+            return false;
         }
 
         public override BitmapImage GetCommandImage(string actionParameter, PluginImageSize imageSize)

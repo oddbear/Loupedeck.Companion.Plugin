@@ -65,27 +65,34 @@ namespace Loupedeck.CompanionPlugin.Commands
                 //
             }
         }
-
-        protected override void RunCommand(string actionParameter)
+        
+        protected override bool ProcessTouchEvent(string actionParameter, DeviceTouchEvent touchEvent)
         {
             var split = actionParameter.Split('|');
 
             if (!int.TryParse(split[0], out var page))
-                return;
+                return false;
 
             if (!int.TryParse(split[1], out var bank))
-                return;
+                return false;
+            
+            var obj = page == Dynamic
+                ? new { keyIndex = bank } as object
+                : new { page, bank } as object;
 
-            if (page == Dynamic)
+            //TODO: How to get haptic feedback?
+            switch (touchEvent.EventType)
             {
-                _client.SendCommand("keydown", new { keyIndex = bank });
-                _client.SendCommand("keyup", new { keyIndex = bank });
+                case DeviceTouchEventType.TouchDown:
+                    _client.SendCommand("keydown", obj);
+                    break;
+                case DeviceTouchEventType.TouchUp:
+                    _client.SendCommand("keyup", obj);
+                    break;
             }
-            else
-            {
-                _client.SendCommand("keydown", new { page, bank });
-                _client.SendCommand("keyup", new { page, bank });
-            }
+            
+            //It is supposed to be true... but then I will loose haptic feedback...
+            return false;
         }
 
         protected override PluginProfileActionData GetProfileActionData()

@@ -4,14 +4,14 @@ using System.IO;
 using System.Threading.Tasks;
 using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
-using WatsonWebsocket;
+using WebSocketSharp;
 
 namespace Loupedeck.CompanionPlugin.Commands
 {
     class CompanionButton : PluginDynamicCommand
     {
         private CompanionPlugin _plugin;
-        private WatsonWsClient _client;
+        private WebSocket _client;
         
         private const int Dynamic = 0;
 
@@ -143,7 +143,7 @@ namespace Loupedeck.CompanionPlugin.Commands
                 //There is limited how many images we can load, we only want to show those who at some point has been on the screen.
                 //We don't want to request on dynamic pages.
                 if (page != 0)
-                    _ = Task.Run(() => _client.SendCommand("request_button", new {page, bank}));
+                    _ = Task.Run(() => _client.SendCommand("request_button", new {page, bank})); //TODO: Only if connected. And on every reconnect.
 
                 //Image not loaded yet.
                 using (var bitmapBuilder = new BitmapBuilder(72, 72))

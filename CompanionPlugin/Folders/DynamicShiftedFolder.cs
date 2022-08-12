@@ -4,7 +4,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
-using WatsonWebsocket;
+using WebSocketSharp;
 
 namespace Loupedeck.CompanionPlugin.Folders
 {
@@ -13,7 +13,7 @@ namespace Loupedeck.CompanionPlugin.Folders
         private Bitmap[] _buttons;
 
         private CompanionPlugin _plugin;
-        private WatsonWsClient _client;
+        private WebSocket _client;
 
         public DynamicShiftedFolder()
         {

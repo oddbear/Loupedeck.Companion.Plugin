@@ -1,11 +1,13 @@
 using System;
-using System.Net.WebSockets;
-using System.Text;
+using System.Diagnostics;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using WatsonWebsocket;
+using WebSocketSharp;
 
 namespace Loupedeck.CompanionPlugin
 {
@@ -16,27 +18,38 @@ namespace Loupedeck.CompanionPlugin
 
         internal event EventHandler<ResponseFillImage> FillImageResponse;
 
-        public WatsonWsClient Client;
+        public WebSocket Client;
+        private CancellationTokenSource _cancellationTokenSource;
 
         public CompanionPlugin()
         {
-            var uri = new Uri("ws://127.0.0.1:28492");
-            Client = new WatsonWsClient(uri);
-            Client.MessageReceived += HandleResponse;
+            Client = new WebSocket("ws://127.0.0.1:28492");
+            Client.Log.Output = Logging;
+            Client.OnOpen += ClientOnOpen;
+            Client.OnClose += ClientOnClose;
+            Client.OnMessage += ClientOnMessage;
         }
-        
+
+        private void Logging(LogData logData, string _)
+        {
+#if DEBUG
+            Trace.WriteLine(logData.Message);
+#endif
+        }
+
         public override void Load()
         {
             this.LoadPluginIcons();
 
-            Client.Start();
-            Client.SendCommand("version", new { version = 2 });
-            Client.SendCommand("new_device", "2E1F407206FF4353B33D724CD1429550");
+            _cancellationTokenSource = new CancellationTokenSource();
+
+            _ = Task.Run(Reconnect);
         }
 
         public override void Unload()
         {
-            Client.Dispose();
+            _cancellationTokenSource.Cancel();
+            ((IDisposable)Client).Dispose();
         }
         
         public override void RunCommand(string commandName, string parameter)
@@ -46,21 +59,49 @@ namespace Loupedeck.CompanionPlugin
         public override void ApplyAdjustment(string adjustmentName, string parameter, int diff)
         {
         }
-        
-        private void HandleResponse(object sender, MessageReceivedEventArgs message)
+
+        private void Reconnect()
         {
-            if (message.Data.Array is null)
+            var token = _cancellationTokenSource.Token;
+            while (Client.ReadyState != WebSocketState.Open)
+            {
+                if (token.IsCancellationRequested)
+                    return;
+
+                base.OnPluginStatusChanged(Loupedeck.PluginStatus.Warning, "Disconnected", "https://github.com/oddbear/Loupedeck.Companion.Plugin", "Companion Repository");
+
+                //This is kind of a hack, but if we don't do this, it will fail after 10 retries.
+                typeof(WebSocket)
+                    .GetField("_retryCountForConnect", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?.SetValue(Client, 1);
+
+                Client.Connect();
+                Thread.Sleep(TimeSpan.FromSeconds(5));
+            }
+            base.OnPluginStatusChanged(Loupedeck.PluginStatus.Normal, "Connected", "https://github.com/oddbear/Loupedeck.Companion.Plugin", "Companion Repository");
+        }
+
+        private void ClientOnOpen(object sender, EventArgs eventArgs)
+        {
+            var token = _cancellationTokenSource.Token;
+            Client.SendCommand("version", new { version = 2 }, token);
+            Client.SendCommand("new_device", "2E1F407206FF4353B33D724CD1429550", token);
+        }
+
+        private void ClientOnClose(object sender, CloseEventArgs closeEventArgs)
+        {
+            Reconnect();
+        }
+
+        private void ClientOnMessage(object sender, MessageEventArgs message)
+        {
+            if (message.Data is null)
                 return;
 
             try
             {
-                switch (message.MessageType)
-                {
-                    case WebSocketMessageType.Text:
-                        var text = Encoding.UTF8.GetString(message.Data.Array);
-                        HandleJsonResponse(text);
-                        break;
-                }
+                if (message.IsText)
+                    HandleJsonResponse(message.Data);
             }
             catch
             {

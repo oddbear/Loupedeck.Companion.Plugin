@@ -72,6 +72,7 @@
     <Compile Include="Responses\ResponseFillImage.cs" />
     <Compile Include="Responses\ResponseNewDevice.cs" />
     <Compile Include="Responses\ResponseVersion.cs" />
+    <Compile Include="Services\CompanionClient.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="PluginConfiguration.json" />
@@ -86,6 +87,8 @@
     <EmbeddedResource Include="Resources\Icons\Icon-32.png" />
     <EmbeddedResource Include="Resources\Icons\Icon-48.png" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Companion\disconnected-80.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

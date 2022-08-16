@@ -1,20 +1,20 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Threading.Tasks;
 using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
-using WebSocketSharp;
+using Loupedeck.CompanionPlugin.Services;
 
 namespace Loupedeck.CompanionPlugin.Commands
 {
     class CompanionButton : PluginDynamicCommand
     {
         private CompanionPlugin _plugin;
-        private WebSocket _client;
+        private CompanionClient Client => _plugin?.Client;
         
         private const int Dynamic = 0;
-
+        
         private readonly Bitmap[,] _imageCache = new Bitmap[100, 32];
 
         public CompanionButton()
@@ -29,17 +29,15 @@ namespace Loupedeck.CompanionPlugin.Commands
         protected override bool OnLoad()
         {
             _plugin = (CompanionPlugin)base.Plugin;
-            _plugin.FillImageResponse += PluginOnFillImageResponse;
+            Client.FillImageResponse += PluginOnFillImageResponse;
 
-            _client = _plugin.Client;
-            
             return true;
         }
         
         protected override bool OnUnload()
         {
-            _plugin.FillImageResponse -= PluginOnFillImageResponse;
-
+            Client.FillImageResponse -= PluginOnFillImageResponse;
+            
             return true;
         }
 
@@ -84,10 +82,10 @@ namespace Loupedeck.CompanionPlugin.Commands
             switch (touchEvent.EventType)
             {
                 case DeviceTouchEventType.TouchDown:
-                    _client.SendCommand("keydown", obj);
+                    Client.SendCommand("keydown", obj);
                     break;
                 case DeviceTouchEventType.TouchUp:
-                    _client.SendCommand("keyup", obj);
+                    Client.SendCommand("keyup", obj);
                     break;
             }
             
@@ -122,11 +120,23 @@ namespace Loupedeck.CompanionPlugin.Commands
 
             return tree;
         }
-
+        
         protected override BitmapImage GetCommandImage(string actionParameter, PluginImageSize imageSize)
         {
             if (string.IsNullOrWhiteSpace(actionParameter))
                 return null;
+
+            if (!Client.Connected)
+            {
+                using (var bitmapBuilder = new BitmapBuilder(80, 80))
+                {
+                    var path = "Loupedeck.CompanionPlugin.Resources.Companion.disconnected-80.png";
+                    var background = EmbeddedResources.ReadImage(path);
+                    bitmapBuilder.Clear(BitmapColor.Black);
+                    bitmapBuilder.SetBackgroundImage(background);
+                    return bitmapBuilder.ToImage();
+                }
+            }
 
             var split = actionParameter.Split('|');
 
@@ -143,7 +153,9 @@ namespace Loupedeck.CompanionPlugin.Commands
                 //There is limited how many images we can load, we only want to show those who at some point has been on the screen.
                 //We don't want to request on dynamic pages.
                 if (page != 0)
-                    _ = Task.Run(() => _client.SendCommand("request_button", new {page, bank})); //TODO: Only if connected. And on every reconnect.
+                {
+                    Client.OnConnectCommand(new { command = "request_button", arguments = new { page, bank } });
+                }
 
                 //Image not loaded yet.
                 using (var bitmapBuilder = new BitmapBuilder(72, 72))

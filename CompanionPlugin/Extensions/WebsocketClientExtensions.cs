@@ -15,7 +15,14 @@ namespace Loupedeck.CompanionPlugin.Extensions
         {
             try
             {
+
                 if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                if (client is null)
+                    return;
+
+                if (!client.IsConnected())
                     return;
 
                 var json = JsonConvert.SerializeObject(obj);

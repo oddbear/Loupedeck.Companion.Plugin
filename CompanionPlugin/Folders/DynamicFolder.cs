@@ -4,7 +4,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
-using WebSocketSharp;
+using Loupedeck.CompanionPlugin.Services;
 
 namespace Loupedeck.CompanionPlugin.Folders
 {
@@ -13,7 +13,7 @@ namespace Loupedeck.CompanionPlugin.Folders
         private Bitmap[] _buttons;
 
         private CompanionPlugin _plugin;
-        private WebSocket _client;
+        private CompanionClient Client => _plugin?.Client;
 
         public DynamicFolder()
         {
@@ -29,16 +29,14 @@ namespace Loupedeck.CompanionPlugin.Folders
         public override bool Load()
         {
             _plugin = (CompanionPlugin) base.Plugin;
-            _plugin.FillImageResponse += PluginOnFillImageResponse;
-
-            _client = _plugin.Client;
+            Client.FillImageResponse += PluginOnFillImageResponse;
 
             return true;
         }
 
         public override bool Unload()
         {
-            _plugin.FillImageResponse -= PluginOnFillImageResponse;
+            Client.FillImageResponse -= PluginOnFillImageResponse;
 
             return true;
         }
@@ -71,10 +69,10 @@ namespace Loupedeck.CompanionPlugin.Folders
             switch (touchEvent.EventType)
             {
                 case DeviceTouchEventType.TouchDown:
-                    _client.SendCommand("keydown", new { keyIndex = index });
+                    Client.SendCommand("keydown", new { keyIndex = index });
                     break;
                 case DeviceTouchEventType.TouchUp:
-                    _client.SendCommand("keyup", new { keyIndex = index });
+                    Client.SendCommand("keyup", new { keyIndex = index });
                     break;
             }
 
@@ -86,6 +84,18 @@ namespace Loupedeck.CompanionPlugin.Folders
         {
             if (!int.TryParse(actionParameter, out var index))
                 return base.GetCommandImage(actionParameter, imageSize);
+
+            if (!Client.Connected)
+            {
+                using (var bitmapBuilder = new BitmapBuilder(80, 80))
+                {
+                    var path = "Loupedeck.CompanionPlugin.Resources.Companion.disconnected-80.png";
+                    var background = EmbeddedResources.ReadImage(path);
+                    bitmapBuilder.Clear(BitmapColor.Black);
+                    bitmapBuilder.SetBackgroundImage(background);
+                    return bitmapBuilder.ToImage();
+                }
+            }
 
             var image = _buttons[index];
 

@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
 using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
 using Loupedeck.CompanionPlugin.Services;
@@ -86,27 +84,10 @@ namespace Loupedeck.CompanionPlugin.Folders
                 return base.GetCommandImage(actionParameter, imageSize);
 
             if (!Client.Connected)
-            {
-                using (var bitmapBuilder = new BitmapBuilder(80, 80))
-                {
-                    var path = "Loupedeck.CompanionPlugin.Resources.Companion.disconnected-80.png";
-                    var background = EmbeddedResources.ReadImage(path);
-                    bitmapBuilder.Clear(BitmapColor.Black);
-                    bitmapBuilder.SetBackgroundImage(background);
-                    return bitmapBuilder.ToImage();
-                }
-            }
+                return BitmapExtensions.DrawDisconnected();
 
             var image = _buttons[index];
-
-            using (var memoryStream = new MemoryStream())
-            {
-                image.Save(memoryStream, ImageFormat.Bmp);
-
-                var data = memoryStream.ToArray();
-                
-                return BitmapImage.FromArray(data);
-            }
+            return image.BitmapToBitmapImage();
         }
         
         public override IEnumerable<string> GetButtonPressActionNames()

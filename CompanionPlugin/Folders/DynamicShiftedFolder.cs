@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
 using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
 using Loupedeck.CompanionPlugin.Services;
@@ -76,16 +74,17 @@ namespace Loupedeck.CompanionPlugin.Folders
         {
             if (actionParameter != "page")
                 return base.GetAdjustmentImage(actionParameter, imageSize);
+            
+            if (!Client.Connected)
+                return BitmapExtensions.DrawDisconnected();
 
             var image = _buttons[8]; //Page
 
-            using (var memoryStream = new MemoryStream())
+            var bitmapImage = image.BitmapToBitmapImage();
+            using (var bitmapBuilder = new BitmapBuilder(50, 50))
             {
-                image.Save(memoryStream, ImageFormat.Bmp);
-
-                var data = memoryStream.ToArray();
-
-                return BitmapImage.FromArray(data);
+                bitmapBuilder.DrawImage(bitmapImage, -10, -10);
+                return bitmapBuilder.ToImage();
             }
         }
 
@@ -122,30 +121,12 @@ namespace Loupedeck.CompanionPlugin.Folders
         {
             if (!int.TryParse(actionParameter, out var index))
                 return base.GetCommandImage(actionParameter, imageSize);
-
-            //TODO: Also page adjustments
+            
             if (!Client.Connected)
-            {
-                using (var bitmapBuilder = new BitmapBuilder(80, 80))
-                {
-                    var path = "Loupedeck.CompanionPlugin.Resources.Companion.disconnected-80.png";
-                    var background = EmbeddedResources.ReadImage(path);
-                    bitmapBuilder.Clear(BitmapColor.Black);
-                    bitmapBuilder.SetBackgroundImage(background);
-                    return bitmapBuilder.ToImage();
-                }
-            }
+                return BitmapExtensions.DrawDisconnected();
 
             var image = _buttons[index];
-            
-            using (var memoryStream = new MemoryStream())
-            {
-                image.Save(memoryStream, ImageFormat.Bmp);
-
-                var data = memoryStream.ToArray();
-                
-                return BitmapImage.FromArray(data);
-            }
+            return image.BitmapToBitmapImage();
         }
         
         public override IEnumerable<string> GetButtonPressActionNames()

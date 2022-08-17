@@ -49,7 +49,7 @@ namespace Loupedeck.CompanionPlugin
 
         internal void NotConnectedStatus()
         {
-            base.OnPluginStatusChanged(Loupedeck.PluginStatus.Error, "Disconnected", "https://github.com/oddbear/Loupedeck.Companion.Plugin", "Companion Repository");
+            base.OnPluginStatusChanged(Loupedeck.PluginStatus.Error, "Could not connect to companion, is it running on this machine, and 'Use Elgato Plugin for StreamDeck access' is enabled?", "https://github.com/oddbear/Loupedeck.Companion.Plugin", "Companion Repository");
         }
     }
 }

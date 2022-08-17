@@ -1,7 +1,4 @@
-﻿using System;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
+﻿using System.Drawing;
 using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
 using Loupedeck.CompanionPlugin.Services;
@@ -127,16 +124,7 @@ namespace Loupedeck.CompanionPlugin.Commands
                 return null;
 
             if (!Client.Connected)
-            {
-                using (var bitmapBuilder = new BitmapBuilder(80, 80))
-                {
-                    var path = "Loupedeck.CompanionPlugin.Resources.Companion.disconnected-80.png";
-                    var background = EmbeddedResources.ReadImage(path);
-                    bitmapBuilder.Clear(BitmapColor.Black);
-                    bitmapBuilder.SetBackgroundImage(background);
-                    return bitmapBuilder.ToImage();
-                }
-            }
+                return BitmapExtensions.DrawDisconnected();
 
             var split = actionParameter.Split('|');
 
@@ -166,14 +154,7 @@ namespace Loupedeck.CompanionPlugin.Commands
                 }
             }
 
-            using (var memoryStream = new MemoryStream())
-            {
-                image.Save(memoryStream, ImageFormat.Bmp);
-
-                var data = memoryStream.ToArray();
-
-                return BitmapImage.FromArray(data);
-            }
+            return image.BitmapToBitmapImage();
         }
     }
 }

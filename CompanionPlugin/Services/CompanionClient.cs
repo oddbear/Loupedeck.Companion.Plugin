@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.Remoting.Channels;
 using System.Threading;
+using System.Threading.Channels;
 using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
 using Newtonsoft.Json;
@@ -19,6 +21,8 @@ namespace Loupedeck.CompanionPlugin.Services
 
         private Thread _thread;
 
+        private readonly Channel<object> _channel;
+
         public WebSocket Client;
 
         public bool Connected => Client?.IsConnected() ?? false;
@@ -27,9 +31,21 @@ namespace Loupedeck.CompanionPlugin.Services
 
         public CompanionClient(CompanionPlugin plugin)
         {
+            _channel = Channel.CreateUnbounded<object>();
             _plugin = plugin;
             Client = CreateClient();
             _thread = new Thread(Reconnect);
+            ChannelReader();
+        }
+
+        private async void ChannelReader()
+        {
+            var token = _cancellationTokenSource.Token;
+            var channelReader = _channel.Reader;
+
+            while (await channelReader.WaitToReadAsync(token))
+                while (channelReader.TryRead(out object command))
+                    Client.SendObject(command, token);
         }
 
         public void OnConnectCommand(object obj)
@@ -37,14 +53,19 @@ namespace Loupedeck.CompanionPlugin.Services
             _commandsOnReconnect.Add(obj);
             if (Client.IsConnected())
             {
-                Client.SendObject(obj);
+                _channel?.Writer.TryWrite(obj);
             }
         }
 
+        private static object _locker = new object();
+
         public void SendCommand(string command, object obj)
         {
-            //TODO: Add to QUEUE...
-            Client.SendCommand(command, obj);
+            if (!Connected)
+                return;
+
+            //TODO: Problem with adjustments (more than one command is queued).
+            _channel?.Writer.TryWrite(new { command, arguments = obj });
         }
 
         public void Start()
@@ -105,12 +126,12 @@ namespace Loupedeck.CompanionPlugin.Services
         private void ClientOnOpen(object sender, EventArgs eventArgs)
         {
             var token = _cancellationTokenSource.Token;
-            Client.SendCommand("version", new { version = 2 }, token);
-            Client.SendCommand("new_device", "2E1F407206FF4353B33D724CD1429550", token);
+            _channel?.Writer.TryWrite(new { command = "version", arguments = new { version = 2 } });
+            _channel?.Writer.TryWrite(new { command = "new_device", arguments = "2E1F407206FF4353B33D724CD1429550" });
 
-            foreach (object command in _commandsOnReconnect)
+            foreach (var command in _commandsOnReconnect)
             {
-                Client.SendObject(command, token);
+                _channel?.Writer.TryWrite(command);
             }
         }
 

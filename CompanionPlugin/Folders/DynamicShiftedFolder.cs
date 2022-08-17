@@ -1,10 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
 using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
-using WatsonWebsocket;
+using Loupedeck.CompanionPlugin.Services;
 
 namespace Loupedeck.CompanionPlugin.Folders
 {
@@ -13,7 +11,7 @@ namespace Loupedeck.CompanionPlugin.Folders
         private Bitmap[] _buttons;
 
         private CompanionPlugin _plugin;
-        private WatsonWsClient _client;
+        private CompanionClient Client => _plugin?.Client;
 
         public DynamicShiftedFolder()
         {
@@ -29,16 +27,14 @@ namespace Loupedeck.CompanionPlugin.Folders
         public override bool Load()
         {
             _plugin = (CompanionPlugin) base.Plugin;
-            _plugin.FillImageResponse += PluginOnFillImageResponse;
-
-            _client = _plugin.Client;
+            Client.FillImageResponse += PluginOnFillImageResponse;
 
             return true;
         }
 
         public override bool Unload()
         {
-            _plugin.FillImageResponse -= PluginOnFillImageResponse;
+            Client.FillImageResponse -= PluginOnFillImageResponse;
 
             return true;
         }
@@ -68,26 +64,27 @@ namespace Loupedeck.CompanionPlugin.Folders
         public override void ApplyAdjustment(string actionParameter, int diff)
         {
             if (diff < 0)
-                _client.SendCommand("keydown", new { keyIndex = 16 });
+                Client.SendCommand("keydown", new { keyIndex = 16 });
 
             if (diff > 0)
-                _client.SendCommand("keydown", new { keyIndex = 0 });
+                Client.SendCommand("keydown", new { keyIndex = 0 });
         }
 
         public override BitmapImage GetAdjustmentImage(string actionParameter, PluginImageSize imageSize)
         {
             if (actionParameter != "page")
                 return base.GetAdjustmentImage(actionParameter, imageSize);
+            
+            if (!Client.Connected)
+                return BitmapExtensions.DrawDisconnected();
 
             var image = _buttons[8]; //Page
 
-            using (var memoryStream = new MemoryStream())
+            var bitmapImage = image.BitmapToBitmapImage();
+            using (var bitmapBuilder = new BitmapBuilder(50, 50))
             {
-                image.Save(memoryStream, ImageFormat.Bmp);
-
-                var data = memoryStream.ToArray();
-
-                return BitmapImage.FromArray(data);
+                bitmapBuilder.DrawImage(bitmapImage, -10, -10);
+                return bitmapBuilder.ToImage();
             }
         }
 
@@ -109,10 +106,10 @@ namespace Loupedeck.CompanionPlugin.Folders
             switch (touchEvent.EventType)
             {
                 case DeviceTouchEventType.TouchDown:
-                    _client.SendCommand("keydown", new { keyIndex = index });
+                    Client.SendCommand("keydown", new { keyIndex = index });
                     break;
                 case DeviceTouchEventType.TouchUp:
-                    _client.SendCommand("keyup", new { keyIndex = index });
+                    Client.SendCommand("keyup", new { keyIndex = index });
                     break;
             }
 
@@ -124,17 +121,12 @@ namespace Loupedeck.CompanionPlugin.Folders
         {
             if (!int.TryParse(actionParameter, out var index))
                 return base.GetCommandImage(actionParameter, imageSize);
+            
+            if (!Client.Connected)
+                return BitmapExtensions.DrawDisconnected();
 
             var image = _buttons[index];
-            
-            using (var memoryStream = new MemoryStream())
-            {
-                image.Save(memoryStream, ImageFormat.Bmp);
-
-                var data = memoryStream.ToArray();
-                
-                return BitmapImage.FromArray(data);
-            }
+            return image.BitmapToBitmapImage();
         }
         
         public override IEnumerable<string> GetButtonPressActionNames()

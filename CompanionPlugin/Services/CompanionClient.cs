@@ -19,32 +19,31 @@ namespace Loupedeck.CompanionPlugin.Services
 
         private Thread _thread;
 
-        public WebSocket Client;
+        private WebSocket _client;
 
-        public bool Connected => Client?.IsConnected() ?? false;
+        public bool Connected => _client?.IsConnected() ?? false;
 
         private readonly List<object> _commandsOnReconnect = new List<object>();
 
         public CompanionClient(CompanionPlugin plugin)
         {
             _plugin = plugin;
-            Client = CreateClient();
+            _client = CreateClient();
             _thread = new Thread(Reconnect);
         }
 
         public void OnConnectCommand(object obj)
         {
             _commandsOnReconnect.Add(obj);
-            if (Client.IsConnected())
+            if (_client.IsConnected())
             {
-                Client.SendObject(obj);
+                _client.SendObject(obj);
             }
         }
 
         public void SendCommand(string command, object obj)
         {
-            //TODO: Add to QUEUE...
-            Client.SendCommand(command, obj);
+            _client.SendCommand(command, obj);
         }
 
         public void Start()
@@ -74,16 +73,16 @@ namespace Loupedeck.CompanionPlugin.Services
         private void Reconnect()
         {
             var token = _cancellationTokenSource.Token;
-            while (Client.ReadyState != WebSocketState.Open)
+            while (_client.ReadyState != WebSocketState.Open)
             {
                 if (token.IsCancellationRequested)
                     return;
 
                 try
                 {
-                    Client.Connect();
+                    _client.Connect();
 
-                    if (!Client.IsConnected())
+                    if (!_client.IsConnected())
                     {
                         _plugin.NotConnectedStatus();
                     }
@@ -93,8 +92,8 @@ namespace Loupedeck.CompanionPlugin.Services
                 {
                     Trace.WriteLine($"{ex.GetType().Name}: {ex.Message}");
 
-                    IDisposable oldClient = Client;
-                    Client = CreateClient();
+                    IDisposable oldClient = _client;
+                    _client = CreateClient();
                     oldClient.Dispose();
                 }
                 Thread.Sleep(TimeSpan.FromSeconds(5));
@@ -102,15 +101,16 @@ namespace Loupedeck.CompanionPlugin.Services
 
             _plugin.ConnectedStatus();
         }
+
         private void ClientOnOpen(object sender, EventArgs eventArgs)
         {
             var token = _cancellationTokenSource.Token;
-            Client.SendCommand("version", new { version = 2 }, token);
-            Client.SendCommand("new_device", "2E1F407206FF4353B33D724CD1429550", token);
+            _client.SendCommand("version", new { version = 2 }, token);
+            _client.SendCommand("new_device", "2E1F407206FF4353B33D724CD1429550", token);
 
             foreach (object command in _commandsOnReconnect)
             {
-                Client.SendObject(command, token);
+                _client.SendObject(command, token);
             }
         }
 
@@ -181,7 +181,7 @@ namespace Loupedeck.CompanionPlugin.Services
         public void Dispose()
         {
             _cancellationTokenSource?.Cancel();
-            ((IDisposable) Client)?.Dispose();
+            ((IDisposable) _client)?.Dispose();
         }
     }
 }

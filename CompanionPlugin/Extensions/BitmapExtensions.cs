@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
+using SkiaSharp;
 
 namespace Loupedeck.CompanionPlugin.Extensions
 {
@@ -19,19 +17,14 @@ namespace Loupedeck.CompanionPlugin.Extensions
             }
         }
 
-        public static BitmapImage BitmapToBitmapImage(this Bitmap bitmap)
+        public static BitmapImage BitmapToBitmapImage(this SKBitmap bitmap)
         {
-            using (var memoryStream = new MemoryStream())
-            {
-                bitmap.Save(memoryStream, ImageFormat.Bmp);
+            var data = bitmap.Encode(SKEncodedImageFormat.Png, 80);
 
-                var data = memoryStream.ToArray();
-
-                return BitmapImage.FromArray(data);
-            }
+            return BitmapImage.FromArray(data.ToArray());
         }
 
-        public static void DrawBuffer(this Bitmap bitmap, byte[] buffer)
+        public static void DrawBuffer(this SKBitmap bitmap, byte[] buffer)
         {
             var height = 72;
             var width = 72;
@@ -40,6 +33,7 @@ namespace Loupedeck.CompanionPlugin.Extensions
             if (buffer.Length != height * width * bytes)
                 throw new ArgumentException($"Buffer is wrong size, should be {bytes} but  was {buffer.Length}");
             
+
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
@@ -50,7 +44,7 @@ namespace Loupedeck.CompanionPlugin.Extensions
                     var g = buffer[pos + 1];
                     var b = buffer[pos + 2];
 
-                    bitmap.SetPixel(x, y, Color.FromArgb(r, g, b));
+                    bitmap.SetPixel(x, y, new SKColor(r, g, b));
                 }
             }
         }

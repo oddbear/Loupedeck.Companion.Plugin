@@ -1,23 +1,23 @@
 ﻿using System.Collections.Generic;
-using System.Drawing;
 using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
 using Loupedeck.CompanionPlugin.Services;
+using SkiaSharp;
 
 namespace Loupedeck.CompanionPlugin.Folders
 {
     class DynamicFolder : PluginDynamicFolder
     {
-        private Bitmap[] _buttons;
+        private SKBitmap[] _buttons;
 
         private CompanionPlugin _plugin;
         private CompanionClient Client => _plugin?.Client;
 
         public DynamicFolder()
         {
-            _buttons = new Bitmap[34];
+            _buttons = new SKBitmap[34];
             for (var i = 0; i < 34; i++)
-                _buttons[i] = new Bitmap(72, 72);
+                _buttons[i] = new SKBitmap(72, 72);
 
             this.DisplayName = "Companion";
             this.GroupName = "Dynamic Folder";

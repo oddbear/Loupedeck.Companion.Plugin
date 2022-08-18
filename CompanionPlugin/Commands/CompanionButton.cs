@@ -1,7 +1,7 @@
-﻿using System.Drawing;
-using Loupedeck.CompanionPlugin.Extensions;
+﻿using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
 using Loupedeck.CompanionPlugin.Services;
+using SkiaSharp;
 
 namespace Loupedeck.CompanionPlugin.Commands
 {
@@ -12,7 +12,7 @@ namespace Loupedeck.CompanionPlugin.Commands
         
         private const int Dynamic = 0;
         
-        private readonly Bitmap[,] _imageCache = new Bitmap[100, 32];
+        private readonly SKBitmap[,] _imageCache = new SKBitmap[100, 32];
 
         public CompanionButton()
         {
@@ -46,7 +46,7 @@ namespace Loupedeck.CompanionPlugin.Commands
                 var index = fillImage.Bank ?? fillImage.KeyIndex;
 
                 if (_imageCache[page, index] is null)
-                    _imageCache[page, index] = new Bitmap(72, 72);
+                    _imageCache[page, index] = new SKBitmap(72, 72);
 
                 var bitmap = _imageCache[page, index];
 

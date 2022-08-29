@@ -22,7 +22,7 @@ namespace Loupedeck.CompanionPlugin.Extensions
                 if (client is null)
                     return;
 
-                if (!client.IsConnected())
+                if (client.ReadyState != WebSocketState.Open)
                     return;
 
                 var json = JsonConvert.SerializeObject(obj);

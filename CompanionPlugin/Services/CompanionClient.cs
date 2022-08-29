@@ -21,7 +21,7 @@ namespace Loupedeck.CompanionPlugin.Services
 
         private WebSocket _client;
 
-        public bool Connected => _client?.IsConnected() ?? false;
+        public bool Connected => _client?.ReadyState == WebSocketState.Open;
 
         private readonly List<object> _commandsOnReconnect = new List<object>();
 
@@ -35,7 +35,7 @@ namespace Loupedeck.CompanionPlugin.Services
         public void OnConnectCommand(object obj)
         {
             _commandsOnReconnect.Add(obj);
-            if (_client.IsConnected())
+            if (Connected)
             {
                 _client.SendObject(obj);
             }
@@ -72,34 +72,41 @@ namespace Loupedeck.CompanionPlugin.Services
 
         private void Reconnect()
         {
-            var token = _cancellationTokenSource.Token;
-            while (_client.ReadyState != WebSocketState.Open)
+            while (!_cancellationTokenSource.IsCancellationRequested)
             {
-                if (token.IsCancellationRequested)
-                    return;
-
                 try
                 {
+                    if (Connected)
+                        continue;
+
                     _client.Connect();
 
-                    if (!_client.IsConnected())
+                    if (Connected)
+                    {
+                        _plugin.ConnectedStatus();
+                    }
+                    else
                     {
                         _plugin.NotConnectedStatus();
                     }
-
                 }
-                catch (Exception ex)
+                catch (Exception exception)
                 {
-                    Trace.WriteLine($"{ex.GetType().Name}: {ex.Message}");
+                    if (exception.Message != "A series of reconnecting has failed.")
+                    {
+                        Trace.WriteLine($"{exception.GetType().Name}: {exception.Message}");
+                        _plugin.ErrorStatus(exception.Message);
+                    }
 
                     IDisposable oldClient = _client;
                     _client = CreateClient();
                     oldClient.Dispose();
                 }
-                Thread.Sleep(TimeSpan.FromSeconds(5));
+                finally
+                {
+                    Thread.Sleep(TimeSpan.FromSeconds(5));
+                }
             }
-
-            _plugin.ConnectedStatus();
         }
 
         private void ClientOnOpen(object sender, EventArgs eventArgs)

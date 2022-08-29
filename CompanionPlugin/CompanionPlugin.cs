@@ -44,12 +44,26 @@ namespace Loupedeck.CompanionPlugin
 
         internal void ConnectedStatus()
         {
-            base.OnPluginStatusChanged(Loupedeck.PluginStatus.Normal, "Connected", "https://github.com/oddbear/Loupedeck.Companion.Plugin", "Companion Repository");
+            base.OnPluginStatusChanged(Loupedeck.PluginStatus.Normal,
+                "Connected",
+                "https://github.com/oddbear/Loupedeck.Companion.Plugin",
+                "Companion Repository");
         }
 
         internal void NotConnectedStatus()
         {
-            base.OnPluginStatusChanged(Loupedeck.PluginStatus.Error, "Could not connect to companion, is it running on this machine, and 'Use Elgato Plugin for StreamDeck access' is enabled?", "https://github.com/oddbear/Loupedeck.Companion.Plugin", "Companion Repository");
+            base.OnPluginStatusChanged(Loupedeck.PluginStatus.Warning,
+                "Could not connect to companion, is it running on this machine, and 'Use Elgato Plugin for StreamDeck access' is enabled?",
+                "https://github.com/oddbear/Loupedeck.Companion.Plugin",
+                "Companion Repository");
+        }
+
+        internal void ErrorStatus(string message)
+        {
+            base.OnPluginStatusChanged(Loupedeck.PluginStatus.Error,
+                $"Error: {message}",
+                "https://github.com/oddbear/Loupedeck.Companion.Plugin",
+                "Plugin GitHub page");
         }
     }
 }

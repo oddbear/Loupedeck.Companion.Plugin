@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Net.WebSockets;
 using System.Threading;
+using System.Threading.Tasks;
 using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using WebSocketSharp;
+using Websocket.Client;
+using Websocket.Client.Models;
 
 namespace Loupedeck.CompanionPlugin.Services
 {
@@ -16,12 +18,10 @@ namespace Loupedeck.CompanionPlugin.Services
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
         internal event EventHandler<ResponseFillImage> FillImageResponse;
+        
+        private readonly WebsocketClient _client;
 
-        private Thread _thread;
-
-        private WebSocket _client;
-
-        public bool Connected => _client?.ReadyState == WebSocketState.Open;
+        public bool Connected => _client.IsRunning;
 
         private readonly List<object> _commandsOnReconnect = new List<object>();
 
@@ -29,7 +29,6 @@ namespace Loupedeck.CompanionPlugin.Services
         {
             _plugin = plugin;
             _client = CreateClient();
-            _thread = new Thread(Reconnect);
         }
 
         public void OnConnectCommand(object obj)
@@ -43,105 +42,82 @@ namespace Loupedeck.CompanionPlugin.Services
 
         public void SendCommand(string command, object obj)
         {
-            _client.SendCommand(command, obj);
+            _client.SendCommand(command, obj, _cancellationTokenSource.Token);
         }
 
         public void Start()
         {
-            _thread.Start();
+            _ = _client.Start();
         }
 
-        private WebSocket CreateClient()
+        private WebsocketClient CreateClient()
         {
-            var client = new WebSocket("ws://127.0.0.1:28492");
-            client.Log.Output = Logging;
-            //client.Log.EnableTraces();
-            client.OnOpen += ClientOnOpen;
-            client.OnClose += ClientOnClose;
-            client.OnMessage += ClientOnMessage;
+            var url = new Uri("ws://127.0.0.1:28492");
+            var client = new WebsocketClient(url)
+            {
+                ErrorReconnectTimeout = TimeSpan.FromSeconds(5)
+            };
+
+            client.ReconnectionHappened.Subscribe(Connect);
+
+            client.DisconnectionHappened.Subscribe(Disconnected, _cancellationTokenSource.Token);
+
+            client.MessageReceived.Subscribe(
+                onNext: Message,
+                onError: Error,
+                token: _cancellationTokenSource.Token);
 
             return client;
         }
 
-        private void Logging(LogData logData, string _)
+        private void Connect(ReconnectionInfo reconnectionInfo)
         {
-#if DEBUG
-            Trace.WriteLine(logData.Message);
-#endif
-        }
-
-        private void Reconnect()
-        {
-            while (!_cancellationTokenSource.IsCancellationRequested)
+            switch (reconnectionInfo.Type)
             {
-                try
-                {
-                    if (Connected)
-                        continue;
+                case ReconnectionType.Initial:
+                case ReconnectionType.Error:
+                    _plugin.ConnectedStatus();
 
-                    _client.Connect();
+                    _client.SendCommand("version", new { version = 2 }, _cancellationTokenSource.Token);
+                    _client.SendCommand("new_device", "2E1F407206FF4353B33D724CD1429550", _cancellationTokenSource.Token);
 
-                    if (Connected)
+                    foreach (var command in _commandsOnReconnect)
                     {
-                        _plugin.ConnectedStatus();
+                        _client.SendObject(command, _cancellationTokenSource.Token);
                     }
-                    else
-                    {
-                        _plugin.NotConnectedStatus();
-                    }
-                }
-                catch (Exception exception)
-                {
-                    if (exception.Message != "A series of reconnecting has failed.")
-                    {
-                        Trace.WriteLine($"{exception.GetType().Name}: {exception.Message}");
-                        _plugin.ErrorStatus(exception.Message);
-                    }
-
-                    IDisposable oldClient = _client;
-                    _client = CreateClient();
-                    oldClient.Dispose();
-                }
-                finally
-                {
-                    Thread.Sleep(TimeSpan.FromSeconds(5));
-                }
+                    break;
             }
         }
 
-        private void ClientOnOpen(object sender, EventArgs eventArgs)
+        private void Message(ResponseMessage message)
         {
-            var token = _cancellationTokenSource.Token;
-            _client.SendCommand("version", new { version = 2 }, token);
-            _client.SendCommand("new_device", "2E1F407206FF4353B33D724CD1429550", token);
-
-            foreach (object command in _commandsOnReconnect)
-            {
-                _client.SendObject(command, token);
-            }
-        }
-
-        private void ClientOnClose(object sender, CloseEventArgs closeEventArgs)
-        {
-            _plugin.NotConnectedStatus();
-        }
-
-        private void ClientOnMessage(object sender, MessageEventArgs message)
-        {
-            if (message.Data is null)
-                return;
-
             try
             {
-                if (message.IsText)
-                    HandleJsonResponse(message.Data);
+                if (message.Text is null)
+                    return;
+
+                if (message.MessageType == WebSocketMessageType.Text)
+                    HandleJsonResponse(message.Text);
             }
             catch
             {
                 //Ignore for now.
             }
         }
+        
+        private void Disconnected(DisconnectionInfo info)
+        {
+            if (info.Type == DisconnectionType.NoMessageReceived)
+                return;
 
+            _plugin.NotConnectedStatus();
+        }
+
+        private void Error(Exception exception)
+        {
+            _plugin.ErrorStatus(exception.Message);
+        }
+        
         private void HandleJsonResponse(string json)
         {
             var jObject = JsonConvert.DeserializeObject<JObject>(json);
@@ -188,7 +164,7 @@ namespace Loupedeck.CompanionPlugin.Services
         public void Dispose()
         {
             _cancellationTokenSource?.Cancel();
-            ((IDisposable) _client)?.Dispose();
+            _client?.Dispose();
         }
     }
 }

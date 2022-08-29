@@ -140,8 +140,11 @@ namespace Loupedeck.CompanionPlugin.Commands
                 //Request image resource.
                 //There is limited how many images we can load, we only want to show those who at some point has been on the screen.
                 //We don't want to request on dynamic pages.
-                if (page != 0)
+                if (page != 0 && !_imageCacheRequested[page, bank])
                 {
+                    //For simpler debugging, not really needed:
+                    _imageCacheRequested[page, bank] = true;
+
                     Client.OnConnectCommand(new { command = "request_button", arguments = new { page, bank } });
                 }
 
@@ -156,5 +159,7 @@ namespace Loupedeck.CompanionPlugin.Commands
 
             return image.BitmapToBitmapImage();
         }
+
+        private readonly bool[,] _imageCacheRequested = new bool[100, 32];
     }
 }

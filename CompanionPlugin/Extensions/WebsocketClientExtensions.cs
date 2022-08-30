@@ -1,17 +1,18 @@
-﻿using System.Threading;
+﻿using System.Net.WebSockets;
+using System.Threading;
 using Newtonsoft.Json;
-using WebSocketSharp;
+using WatsonWebsocket;
 
 namespace Loupedeck.CompanionPlugin.Extensions
 {
     public static class WebSocketClientExtensions
     {
-        public static void SendCommand(this WebSocket client, string command, object obj, CancellationToken cancellationToken = default)
+        public static void SendCommand(this WatsonWsClient client, string command, object obj, CancellationToken cancellationToken = default)
         {
             client.SendObject(new { command, arguments = obj }, cancellationToken);
         }
 
-        public static void SendObject(this WebSocket client, object obj, CancellationToken cancellationToken = default)
+        public static void SendObject(this WatsonWsClient client, object obj, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -22,11 +23,13 @@ namespace Loupedeck.CompanionPlugin.Extensions
                 if (client is null)
                     return;
 
-                if (client.ReadyState != WebSocketState.Open)
+                if (!client.Connected)
                     return;
 
                 var json = JsonConvert.SerializeObject(obj);
-                client.Send(json);
+                client.SendAsync(json, WebSocketMessageType.Text, cancellationToken)
+                    .GetAwaiter()
+                    .GetResult();
             }
             catch
             {

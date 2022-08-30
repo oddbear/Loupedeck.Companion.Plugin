@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.WebSockets;
+using System.Text;
 using System.Threading;
 using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using WebSocketSharp;
+using WatsonWebsocket;
 
 namespace Loupedeck.CompanionPlugin.Services
 {
@@ -19,16 +21,15 @@ namespace Loupedeck.CompanionPlugin.Services
 
         private Thread _thread;
 
-        private WebSocket _client;
+        private WatsonWsClient _client;
 
-        public bool Connected => _client?.ReadyState == WebSocketState.Open;
+        public bool Connected => _client?.Connected ?? false;
 
         private readonly List<object> _commandsOnReconnect = new List<object>();
 
         public CompanionClient(CompanionPlugin plugin)
         {
             _plugin = plugin;
-            _client = CreateClient();
             _thread = new Thread(Reconnect);
         }
 
@@ -37,13 +38,16 @@ namespace Loupedeck.CompanionPlugin.Services
             _commandsOnReconnect.Add(obj);
             if (Connected)
             {
-                _client.SendObject(obj);
+                _client?.SendObject(obj);
             }
         }
 
         public void SendCommand(string command, object obj)
         {
-            _client.SendCommand(command, obj);
+            if (Connected)
+            {
+                _client?.SendCommand(command, obj, _cancellationTokenSource.Token);
+            }
         }
 
         public void Start()
@@ -51,25 +55,18 @@ namespace Loupedeck.CompanionPlugin.Services
             _thread.Start();
         }
 
-        private WebSocket CreateClient()
+        private WatsonWsClient CreateClient()
         {
-            var client = new WebSocket("ws://127.0.0.1:28492");
-            client.Log.Output = Logging;
-            //client.Log.EnableTraces();
-            client.OnOpen += ClientOnOpen;
-            client.OnClose += ClientOnClose;
-            client.OnMessage += ClientOnMessage;
+            var uri = new Uri("ws://127.0.0.1:28492");
+            var client = new WatsonWsClient(uri);
+
+            client.ServerConnected += ClientOnOpen;
+            client.MessageReceived += ClientOnMessage;
+            client.ServerDisconnected += ClientOnClose;
 
             return client;
         }
-
-        private void Logging(LogData logData, string _)
-        {
-#if DEBUG
-            Trace.WriteLine(logData.Message);
-#endif
-        }
-
+        
         private void Reconnect()
         {
             while (!_cancellationTokenSource.IsCancellationRequested)
@@ -79,7 +76,9 @@ namespace Loupedeck.CompanionPlugin.Services
                     if (Connected)
                         continue;
 
-                    _client.Connect();
+                    _client?.Dispose();
+                    _client = CreateClient();
+                    _client.Start();
 
                     if (Connected)
                     {
@@ -97,10 +96,6 @@ namespace Loupedeck.CompanionPlugin.Services
                         Trace.WriteLine($"{exception.GetType().Name}: {exception.Message}");
                         _plugin.ErrorStatus(exception.Message);
                     }
-
-                    IDisposable oldClient = _client;
-                    _client = CreateClient();
-                    oldClient.Dispose();
                 }
                 finally
                 {
@@ -111,30 +106,30 @@ namespace Loupedeck.CompanionPlugin.Services
 
         private void ClientOnOpen(object sender, EventArgs eventArgs)
         {
-            var token = _cancellationTokenSource.Token;
-            _client.SendCommand("version", new { version = 2 }, token);
-            _client.SendCommand("new_device", "2E1F407206FF4353B33D724CD1429550", token);
+            _client?.SendCommand("version", new { version = 2 }, _cancellationTokenSource.Token);
+            _client?.SendCommand("new_device", "2E1F407206FF4353B33D724CD1429550", _cancellationTokenSource.Token);
 
             foreach (object command in _commandsOnReconnect)
             {
-                _client.SendObject(command, token);
+                _client?.SendObject(command, _cancellationTokenSource.Token);
             }
         }
 
-        private void ClientOnClose(object sender, CloseEventArgs closeEventArgs)
+        private void ClientOnClose(object sender, EventArgs eventArgs)
         {
             _plugin.NotConnectedStatus();
         }
 
-        private void ClientOnMessage(object sender, MessageEventArgs message)
+        private void ClientOnMessage(object sender, MessageReceivedEventArgs message)
         {
-            if (message.Data is null)
-                return;
-
             try
             {
-                if (message.IsText)
-                    HandleJsonResponse(message.Data);
+                if (message.MessageType == WebSocketMessageType.Text)
+                {
+                    var data = message.Data.Array;
+                    var json = Encoding.UTF8.GetString(data);
+                    HandleJsonResponse(json);
+                }
             }
             catch
             {
@@ -188,7 +183,7 @@ namespace Loupedeck.CompanionPlugin.Services
         public void Dispose()
         {
             _cancellationTokenSource?.Cancel();
-            ((IDisposable) _client)?.Dispose();
+            _client?.Dispose();
         }
     }
 }

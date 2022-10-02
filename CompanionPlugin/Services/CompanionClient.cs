@@ -1,6 +1,4 @@
-﻿extern alias SharpSocket;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -8,7 +6,7 @@ using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SharpSocket::WebSocketSharp;
+using WebSocketSharp;
 
 namespace Loupedeck.CompanionPlugin.Services
 {

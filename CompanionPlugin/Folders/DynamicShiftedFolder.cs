@@ -21,7 +21,11 @@ namespace Loupedeck.CompanionPlugin.Folders
 
             this.DisplayName = "Companion Shifted";
             this.GroupName = "Dynamic Folder";
-            this.Navigation = PluginDynamicFolderNavigation.EncoderArea;
+        }
+
+        public override PluginDynamicFolderNavigation GetNavigationArea(DeviceType deviceType)
+        {
+            return PluginDynamicFolderNavigation.EncoderArea;
         }
 
         public override bool Load()
@@ -88,7 +92,7 @@ namespace Loupedeck.CompanionPlugin.Folders
             }
         }
 
-        public override IEnumerable<string> GetEncoderRotateActionNames()
+        public override IEnumerable<string> GetEncoderRotateActionNames(DeviceType deviceType)
         {
             return new[]
             {
@@ -128,8 +132,8 @@ namespace Loupedeck.CompanionPlugin.Folders
             var image = _buttons[index];
             return image.BitmapToBitmapImage();
         }
-        
-        public override IEnumerable<string> GetButtonPressActionNames()
+
+        public override IEnumerable<string> GetButtonPressActionNames(DeviceType deviceType)
         {
             return new[]
             {

@@ -44,6 +44,7 @@ namespace Loupedeck.CompanionPlugin
 
         internal void ConnectedStatus()
         {
+            base.OnActionImageChanged(null, null, true);
             base.OnPluginStatusChanged(Loupedeck.PluginStatus.Normal,
                 "Connected",
                 "https://github.com/oddbear/Loupedeck.Companion.Plugin",
@@ -52,6 +53,7 @@ namespace Loupedeck.CompanionPlugin
 
         internal void NotConnectedStatus()
         {
+            base.OnActionImageChanged(null, null, true);
             base.OnPluginStatusChanged(Loupedeck.PluginStatus.Warning,
                 "Could not connect to companion, is it running on this machine, and 'Use Elgato Plugin for StreamDeck access' is enabled?",
                 "https://github.com/oddbear/Loupedeck.Companion.Plugin",
@@ -60,6 +62,7 @@ namespace Loupedeck.CompanionPlugin
 
         internal void ErrorStatus(string message)
         {
+            base.OnActionImageChanged(null, null, true);
             base.OnPluginStatusChanged(Loupedeck.PluginStatus.Error,
                 $"Error: {message}",
                 "https://github.com/oddbear/Loupedeck.Companion.Plugin",

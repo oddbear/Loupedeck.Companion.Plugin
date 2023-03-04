@@ -17,7 +17,7 @@ namespace Loupedeck.CompanionPlugin.Services
 
         internal event EventHandler<ResponseFillImage> FillImageResponse;
 
-        private Thread _thread;
+        private readonly Thread _thread;
 
         private WebSocket _client;
 
@@ -159,10 +159,10 @@ namespace Loupedeck.CompanionPlugin.Services
                 switch (value)
                 {
                     case "version":
-                        var version = arguments.ToObject<ResponseVersion>();
+                        //var version = arguments.ToObject<ResponseVersion>();
                         break;
                     case "new_device":
-                        var newDevice = arguments.ToObject<ResponseNewDevice>();
+                        //var newDevice = arguments.ToObject<ResponseNewDevice>();
                         break;
                 }
             }

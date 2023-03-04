@@ -60,23 +60,39 @@ namespace Loupedeck.CompanionPlugin.Commands
                 //
             }
         }
-        
+
+        protected override void RunCommand(string actionParameter)
+        {
+            //Simulate a keypress with Touch Down and Up.
+            //It does not seem like I need any sort of wait between from my testing.
+            ProcessTouch(actionParameter, DeviceTouchEventType.TouchDown);
+            ProcessTouch(actionParameter, DeviceTouchEventType.TouchUp);
+        }
+
         protected override bool ProcessTouchEvent(string actionParameter, DeviceTouchEvent touchEvent)
+        {
+            ProcessTouch(actionParameter, touchEvent.EventType);
+
+            //It is supposed to be true... but then I will loose haptic feedback...
+            return false;
+        }
+
+        private void ProcessTouch(string actionParameter, DeviceTouchEventType eventType)
         {
             var split = actionParameter.Split('|');
 
             if (!int.TryParse(split[0], out var page))
-                return false;
+                return;
 
             if (!int.TryParse(split[1], out var bank))
-                return false;
-            
+                return;
+
             var obj = page == Dynamic
                 ? new { keyIndex = bank } as object
                 : new { page, bank } as object;
 
             //TODO: How to get haptic feedback?
-            switch (touchEvent.EventType)
+            switch (eventType)
             {
                 case DeviceTouchEventType.TouchDown:
                     Client.SendCommand("keydown", obj);
@@ -85,9 +101,6 @@ namespace Loupedeck.CompanionPlugin.Commands
                     Client.SendCommand("keyup", obj);
                     break;
             }
-            
-            //It is supposed to be true... but then I will loose haptic feedback...
-            return false;
         }
 
         protected override PluginProfileActionData GetProfileActionData()

@@ -8,7 +8,7 @@ namespace Loupedeck.CompanionPlugin.Folders
 {
     class DynamicShiftedFolder : PluginDynamicFolder
     {
-        private SKBitmap[] _buttons;
+        private readonly SKBitmap[] _buttons;
 
         private CompanionPlugin _plugin;
         private CompanionClient Client => _plugin?.Client;
@@ -94,6 +94,7 @@ namespace Loupedeck.CompanionPlugin.Folders
 
         public override IEnumerable<string> GetEncoderRotateActionNames(DeviceType deviceType)
         {
+            //TODO: Issue with navigating on turn? Should be click... maybe...
             return new[]
             {
                 PluginDynamicFolder.NavigateUpActionName,

@@ -8,7 +8,7 @@ namespace Loupedeck.CompanionPlugin.Folders
 {
     class DynamicFolder : PluginDynamicFolder
     {
-        private SKBitmap[] _buttons;
+        private readonly SKBitmap[] _buttons;
 
         private CompanionPlugin _plugin;
         private CompanionClient Client => _plugin?.Client;

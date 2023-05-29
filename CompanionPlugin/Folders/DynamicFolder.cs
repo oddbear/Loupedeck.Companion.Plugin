@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
 using Loupedeck.CompanionPlugin.Services;
@@ -66,11 +67,11 @@ namespace Loupedeck.CompanionPlugin.Folders
         {
             if (!int.TryParse(actionParameter, out var index))
                 return false;
-
+            
             //TODO: How to get haptic feedback?
             switch (touchEvent.EventType)
             {
-                case DeviceTouchEventType.TouchDown:
+                case DeviceTouchEventType.Press:
                     Client.SendCommand("keydown", new { keyIndex = index });
                     break;
                 case DeviceTouchEventType.TouchUp:

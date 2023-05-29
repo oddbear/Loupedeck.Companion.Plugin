@@ -1,4 +1,5 @@
-﻿using Loupedeck.CompanionPlugin.Extensions;
+﻿using System.Diagnostics;
+using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
 using Loupedeck.CompanionPlugin.Services;
 using SkiaSharp;
@@ -65,7 +66,7 @@ namespace Loupedeck.CompanionPlugin.Commands
         {
             //Simulate a keypress with Touch Down and Up.
             //It does not seem like I need any sort of wait between from my testing.
-            ProcessTouch(actionParameter, DeviceTouchEventType.TouchDown);
+            ProcessTouch(actionParameter, DeviceTouchEventType.Press);
             ProcessTouch(actionParameter, DeviceTouchEventType.TouchUp);
         }
 
@@ -90,11 +91,11 @@ namespace Loupedeck.CompanionPlugin.Commands
             var obj = page == Dynamic
                 ? new { keyIndex = bank } as object
                 : new { page, bank } as object;
-
+            
             //TODO: How to get haptic feedback?
             switch (eventType)
             {
-                case DeviceTouchEventType.TouchDown:
+                case DeviceTouchEventType.Press:
                     Client.SendCommand("keydown", obj);
                     break;
                 case DeviceTouchEventType.TouchUp:

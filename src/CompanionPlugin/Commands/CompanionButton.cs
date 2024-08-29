@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using Loupedeck.CompanionPlugin.Extensions;
+﻿using Loupedeck.CompanionPlugin.Extensions;
 using Loupedeck.CompanionPlugin.Responses;
 using Loupedeck.CompanionPlugin.Services;
 using SkiaSharp;

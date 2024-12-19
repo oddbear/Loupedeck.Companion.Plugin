@@ -18,7 +18,7 @@ description: A plugin for the Bitriser Companion (using the Stream Deck API).
 pluginFileName: CompanionPlugin.dll
 
 # Plugin version.
-version: 0.2.7
+version: 0.2.8
 
 # Author of the plugin. The author can be a company or an individual developer.
 author: oddbear

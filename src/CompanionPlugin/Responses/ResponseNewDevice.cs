@@ -1,7 +1,6 @@
-﻿namespace Loupedeck.CompanionPlugin.Responses
+﻿namespace Loupedeck.CompanionPlugin.Responses;
+
+class ResponseNewDevice
 {
-    class ResponseNewDevice
-    {
-        public bool Result { get; set; }
-    }
+    public bool Result { get; set; }
 }

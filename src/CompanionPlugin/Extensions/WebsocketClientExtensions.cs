@@ -1,36 +1,35 @@
 ﻿using Newtonsoft.Json;
 using WebSocketSharp;
 
-namespace Loupedeck.CompanionPlugin.Extensions
+namespace Loupedeck.CompanionPlugin.Extensions;
+
+public static class WebSocketClientExtensions
 {
-    public static class WebSocketClientExtensions
+    public static void SendCommand(this WebSocket client, string command, object obj, CancellationToken cancellationToken = default)
     {
-        public static void SendCommand(this WebSocket client, string command, object obj, CancellationToken cancellationToken = default)
+        client.SendObject(new { command, arguments = obj }, cancellationToken);
+    }
+
+    public static void SendObject(this WebSocket client, object obj, CancellationToken cancellationToken = default)
+    {
+        try
         {
-            client.SendObject(new { command, arguments = obj }, cancellationToken);
+
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            if (client is null)
+                return;
+
+            if (client.ReadyState != WebSocketState.Open)
+                return;
+
+            var json = JsonConvert.SerializeObject(obj);
+            client.Send(json);
         }
-
-        public static void SendObject(this WebSocket client, object obj, CancellationToken cancellationToken = default)
+        catch
         {
-            try
-            {
-
-                if (cancellationToken.IsCancellationRequested)
-                    return;
-
-                if (client is null)
-                    return;
-
-                if (client.ReadyState != WebSocketState.Open)
-                    return;
-
-                var json = JsonConvert.SerializeObject(obj);
-                client.Send(json);
-            }
-            catch
-            {
-                //
-            }
+            //
         }
     }
 }

@@ -1,14 +1,13 @@
-namespace Loupedeck.CompanionPlugin
+namespace Loupedeck.CompanionPlugin;
+
+public class CompanionApplication : ClientApplication
 {
-    public class CompanionApplication : ClientApplication
+    public CompanionApplication()
     {
-        public CompanionApplication()
-        {
 
-        }
-
-        protected override string GetProcessName() => "";
-
-        protected override string GetBundleName() => "";
     }
+
+    protected override string GetProcessName() => "";
+
+    protected override string GetBundleName() => "";
 }

@@ -1,7 +1,6 @@
-﻿namespace Loupedeck.CompanionPlugin.Responses
+﻿namespace Loupedeck.CompanionPlugin.Responses;
+
+class ResponseVersion
 {
-    class ResponseVersion
-    {
-        public int Version { get; set; }
-    }
+    public int Version { get; set; }
 }
